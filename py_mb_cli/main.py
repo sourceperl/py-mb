@@ -1,16 +1,23 @@
 import argparse
 import sys
-from typing import Union
 
 from IPython import embed
 from pyModbusTCP.client import ModbusClient
 
 from . import HEADER_TXT, HELP_TXT, NAME, __version__
-from .cli import Cli
+from .cli import Cli, convert
 
 
 def help():
     print(HELP_TXT)
+
+
+def to_f32(*items: float):
+    return convert.from_f32(items).to_u16()
+
+
+def to_f64(*items: float):
+    return convert.from_f64(items).to_u16()
 
 
 def main():
@@ -38,7 +45,7 @@ def main():
             # if a command is set, run it and show result
             print(eval(args.cmd))
         else:
-            # when no command is set, start in interractive mode
+            # when no command is set, start in interactive mode
             sys.exit(embed(banner1=HEADER_TXT, banner2='', exit_msg=''))
     except ValueError as e:
         print(e)
