@@ -1,156 +1,141 @@
 import struct
+from binascii import hexlify
 from typing import List, Optional, Sequence, Union
 
 from pyModbusTCP.client import ModbusClient
 
 
-class _Convert:
+class Convert:
     """ A class for easy conversion of Modbus data formats. """
 
-    def __init__(self, swap_bytes: bool = False, swap_word: bool = False) -> None:
-        # args
-        # self.swap_bytes = swap_bytes
-        # self.swap_word = swap_word
-        # private
-        self._raw = bytes()
+    class To:
+        def __init__(self, raw: bytes) -> None:
+            # args
+            self.raw = raw
 
-    def from_u16(self, items: Sequence):
-        """ from unsigned 16 bits """
-        self._raw = bytes()
-        for item in items:
-            self._raw += struct.pack('>H', item)
-        return self
+        def _raw_to_items(self, fmt: str) -> list:
+            byte_size = struct.calcsize(fmt)
+            items_l = []
+            for i in range(0, len(self.raw), byte_size):
+                items_l.append(struct.unpack(fmt, self.raw[i:i+byte_size])[0])
+            return items_l
 
-    def from_f32(self, items: Sequence):
-        """ from IEEE single precision 64 bits """
-        self._raw = bytes()
-        for item in items:
-            self._raw += struct.pack('>f', item)
-        return self
+        def to_bytes(self) -> bytes:
+            """to raw bytes"""
+            return self.raw
 
-    def from_f64(self, items: Sequence):
-        """ from IEEE double precision 64 bits """
-        self._raw = bytes()
-        for item in items:
-            self._raw += struct.pack('>d', item)
-        return self
+        def to_hex(self) -> str:
+            """to raw bytes"""
+            return hexlify(self.raw, '-', 2).upper().decode()
 
-    def to_bytes(self) -> bytes:
-        """ as raw bytes """
-        return self._raw
+        def to_str(self, encoding: str = 'iso-8859-1') -> Optional[str]:
+            """to str"""
+            return self.raw.rstrip(b'\x00').decode(encoding)
 
-    def to_u16(self) -> List[int]:
-        """ as unsigned 16 bits """
-        u16_l = []
-        for i in range(0, len(self._raw), 2):
-            u16_l.append(struct.unpack('>H', self._raw[i:i+2])[0])
-        return u16_l
+        def to_regs(self) -> List[int]:
+            """to modbus registers (words of 16 bits)"""
+            return self._raw_to_items(fmt='>H')
 
-    def to_i16(self) -> List[int]:
-        """ as signed 16 bits """
-        i16_l = []
-        for i in range(0, len(self._raw), 2):
-            i16_l.append(struct.unpack('>h', self._raw[i:i+2])[0])
-        return i16_l
+        def to_u16(self) -> List[int]:
+            """to unsigned 16 bits"""
+            return self._raw_to_items(fmt='>H')
 
-    def to_u32(self) -> List[int]:
-        """ as unsigned 32 bits """
-        u32_l = []
-        for i in range(0, len(self._raw), 4):
-            u32_l.append(struct.unpack('>I', self._raw[i:i+4])[0])
-        return u32_l
+        def to_i16(self) -> List[int]:
+            """to signed 16 bits"""
+            return self._raw_to_items(fmt='>h')
 
-    def to_i32(self) -> List[int]:
-        """ as signed 32 bits """
-        i32_l = []
-        for i in range(0, len(self._raw), 4):
-            i32_l.append(struct.unpack('>i', self._raw[i:i+4])[0])
-        return i32_l
+        def to_u32(self) -> List[int]:
+            """to unsigned 32 bits"""
+            return self._raw_to_items(fmt='>I')
 
-    def to_f32(self) -> List[float]:
-        """ to IEEE single precision 32 bits """
-        f32_l = []
-        for i in range(0, len(self._raw), 4):
-            f32_l.append(struct.unpack('>f', self._raw[i:i+4])[0])
-        return f32_l
+        def to_i32(self) -> List[int]:
+            """to signed 32 bits"""
+            return self._raw_to_items(fmt='>i')
 
-    def to_f64(self) -> List[float]:
-        """ to IEEE double precision 64 bits """
-        f64_l = []
-        for i in range(0, len(self._raw), 8):
-            f64_l.append(struct.unpack('>d', self._raw[i:i+8])[0])
-        return f64_l
+        def to_u64(self) -> List[int]:
+            """to unsigned 64 bits"""
+            return self._raw_to_items(fmt='>Q')
 
-    def swap_bytes(self):
-        """ Swapped bytes in the input bytearray (b'1234' -> b'2143') """
-        sw_value = bytearray(len(self._raw))
-        for i in range(0, len(self._raw), 2):
-            sw_value[i] = self._raw[i+1]
-            sw_value[i+1] = self._raw[i]
-        self._raw = bytes(sw_value)
-        return self
+        def to_i64(self) -> List[int]:
+            """to signed 64 bits"""
+            return self._raw_to_items(fmt='>q')
 
-    def swap_words(self):
-        """ Swapped words in the input bytearray (b'1234' -> b'3412') """
-        sw_value = bytearray(len(self._raw))
-        for i in range(0, len(self._raw), 4):
-            sw_value[i:i+2] = self._raw[i+2:i+4]
-            sw_value[i+2:i+4] = self._raw[i:i+2]
-        self._raw = bytes(sw_value)
-        return self
+        def to_f32(self) -> List[float]:
+            """to IEEE single precision 32 bits"""
+            return self._raw_to_items(fmt='>f')
 
+        def to_f64(self) -> List[float]:
+            """to IEEE double precision 64 bits"""
+            return self._raw_to_items(fmt='>d')
 
-convert = _Convert()
+        def swap_bytes(self):
+            """apply a swap to bytes (b'1234' -> b'2143')"""
+            sw_value = bytearray(len(self._raw))
+            for i in range(0, len(self._raw), 2):
+                sw_value[i] = self._raw[i+1]
+                sw_value[i+1] = self._raw[i]
+            self._raw = bytes(sw_value)
+            return self
 
+        def swap_words(self):
+            """apply a swap to words (b'1234' -> b'3412')"""
+            sw_value = bytearray(len(self._raw))
+            for i in range(0, len(self._raw), 4):
+                sw_value[i:i+2] = self._raw[i+2:i+4]
+                sw_value[i+2:i+4] = self._raw[i:i+2]
+            self._raw = bytes(sw_value)
+            return self
 
-class _Response:
-    """ An helper class for formatting the output of Modbus client functions. """
+    def _build_convert_to(self, items: Optional[Sequence], fmt: str):
+        raw = bytes()
+        if items:
+            for item in items:
+                raw += struct.pack(fmt, item)
+        return Convert.To(raw)
 
-    def __init__(self, items: Union[list, None]) -> None:
-        self.items = items
+    def from_regs(self, items: Optional[Sequence[int]]):
+        """from modbus registers (words of 16 bits)"""
+        return self._build_convert_to(items, fmt='>H')
 
-    # def __str__(self) -> str:
-    #     return str(self.items)
+    def from_u16(self, items: Union[int, Sequence[int]]):
+        """from unsigned 16 bits"""
+        items = [items] if isinstance(items, int) else items
+        return self._build_convert_to(items, fmt='>H')
 
-    # def __repr__(self) -> str:
-    #     return repr(self.items)
+    def from_i16(self, items: Union[int, Sequence[int]]):
+        """from signed 16 bits"""
+        items = [items] if isinstance(items, int) else items
+        return self._build_convert_to(items, fmt='>h')
 
-    def as_bytes(self) -> Optional[bytes]:
-        if isinstance(self.items, list):
-            return convert.from_u16(self.items).to_bytes()
+    def from_u32(self, items: Union[int, Sequence[int]]):
+        """from unsigned 32 bits"""
+        items = [items] if isinstance(items, int) else items
+        return self._build_convert_to(items, fmt='>I')
 
-    def as_str(self, encoding: str = 'iso-8859-1') -> Optional[str]:
-        if isinstance(self.items, list):
-            ret_str = convert.from_u16(self.items).to_bytes().decode(encoding)
-            return ret_str.rstrip('\x00')
+    def from_i32(self, items: Union[int, Sequence[int]]):
+        """from signed 32 bits"""
+        items = [items] if isinstance(items, int) else items
+        return self._build_convert_to(items, fmt='>i')
 
-    def as_hex(self) -> Optional[list]:
-        if isinstance(self.items, list):
-            return [f'0x{x:04x}' for x in self.items]
+    def from_u64(self, items: Union[int, Sequence[int]]):
+        """from unsigned 64 bits"""
+        items = [items] if isinstance(items, int) else items
+        return self._build_convert_to(items, fmt='>Q')
 
-    def as_u16(self) -> Optional[list]:
-        if isinstance(self.items, list):
-            return convert.from_u16(self.items).to_u16()
+    def from_i64(self, items: Union[int, Sequence[int]]):
+        """from signed 64 bits"""
+        items = [items] if isinstance(items, int) else items
+        return self._build_convert_to(items, fmt='>q')
 
-    def as_i16(self) -> Optional[list]:
-        if isinstance(self.items, list):
-            return convert.from_u16(self.items).to_i16()
+    def from_f32(self, items: Union[float, Sequence[float]]):
+        """from IEEE single precision 64 bits"""
+        items = [items] if isinstance(items, (int, float)) else items
+        return self._build_convert_to(items, fmt='>f')
 
-    def as_u32(self) -> Optional[list]:
-        if isinstance(self.items, list):
-            return convert.from_u16(self.items).to_u32()
-
-    def as_i32(self) -> Optional[list]:
-        if isinstance(self.items, list):
-            return convert.from_u16(self.items).to_i32()
-
-    def as_f32(self) -> Optional[list]:
-        if isinstance(self.items, list):
-            return _Convert().from_u16(self.items).to_f32()
-
-    def as_f64(self) -> Optional[list]:
-        if isinstance(self.items, list):
-            return convert.from_u16(self.items).to_f64()
+    def from_f64(self, items: Union[float, Sequence[float]]):
+        """from IEEE double precision 64 bits"""
+        items = [items] if isinstance(items, (int, float)) else items
+        return self._build_convert_to(items, fmt='>d')
 
 
 class Cli:
@@ -159,26 +144,31 @@ class Cli:
     def __init__(self, modbus_client: ModbusClient):
         self.modbus_client = modbus_client
 
-    def read_bits(self, address: int, number: int = 1, d_inputs: bool = False) -> _Response:
-        """ """
+    def read_bits(self, address: int, number: int = 1, d_inputs: bool = False):
         if d_inputs:
-            return _Response(self.modbus_client.read_discrete_inputs(address, number))
+            return self.modbus_client.read_discrete_inputs(address, number)
         else:
-            return _Response(self.modbus_client.read_coils(address, number))
+            return self.modbus_client.read_coils(address, number)
 
-    def read_words(self, address: int, number: int = 1, i_regs: bool = False) -> _Response:
+    def read_words(self, address: int, number: int = 1, i_regs: bool = False, convert: bool = False):
         if i_regs:
-            return _Response(self.modbus_client.read_input_registers(address, number))
+            read_l = self.modbus_client.read_input_registers(address, number)
         else:
-            return _Response(self.modbus_client.read_holding_registers(address, number))
+            read_l = self.modbus_client.read_holding_registers(address, number)
+        if convert:
+            return Convert().from_regs(read_l)
+        else:
+            return read_l
 
-    def write_bits(self, address: int, value: Union[bool, list, tuple]):
+    def write_bits(self, address: int, value: Union[bool, list, tuple]) -> bool:
         if isinstance(value, (list, tuple)):
             return self.modbus_client.write_multiple_coils(address, value)
         else:
             return self.modbus_client.write_single_coil(address, value)
 
-    def write_words(self, address: int, value: Union[int, list, tuple]):
+    def write_words(self, address: int, value: Union[int, list, tuple, Convert.To]) -> bool:
+        if isinstance(value, Convert.To):
+            value = value.to_regs()
         if isinstance(value, (list, tuple)):
             return self.modbus_client.write_multiple_registers(address, value)
         else:

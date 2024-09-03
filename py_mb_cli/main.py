@@ -4,20 +4,13 @@ import sys
 from IPython import embed
 from pyModbusTCP.client import ModbusClient
 
-from . import HEADER_TXT, HELP_TXT, NAME, __version__
-from .cli import Cli, convert
+from . import __version__
+from .cli import Cli, Convert
+from .help import HEADER_TXT, HELP_TXT
 
 
 def help():
     print(HELP_TXT)
-
-
-def to_f32(*items: float):
-    return convert.from_f32(items).to_u16()
-
-
-def to_f64(*items: float):
-    return convert.from_f64(items).to_u16()
 
 
 def main():
@@ -34,8 +27,11 @@ def main():
 
     # version request
     if args.version:
-        print(f'{NAME} {__version__}')
+        print(__version__)
         exit(0)
+
+    # an helper to convert modbus data
+    convert = Convert()
 
     # init modbus client
     try:
