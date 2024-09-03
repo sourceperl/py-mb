@@ -34,14 +34,14 @@ def main():
     convert = Convert()
 
     # init modbus client
-    try:
-        cli = Cli(ModbusClient(host=args.host, port=args.port, unit_id=args.unit_id,
-                               timeout=args.timeout, debug=args.debug))
-        if args.cmd:
-            # if a command is set, run it and show result
+    cli = Cli(ModbusClient(host=args.host, port=args.port, unit_id=args.unit_id,
+                           timeout=args.timeout, debug=args.debug))
+    if args.cmd:
+        # if a command is set, run it and show result
+        try:
             print(eval(args.cmd))
-        else:
-            # when no command is set, start in interactive mode
-            sys.exit(embed(banner1=HEADER_TXT, banner2='', exit_msg=''))
-    except ValueError as e:
-        print(e)
+        except ValueError as e:
+            print(e)
+    else:
+        # when no command is set, start in interactive mode
+        sys.exit(embed(banner1=HEADER_TXT, banner2='', exit_msg=''))
