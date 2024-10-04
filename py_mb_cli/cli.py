@@ -1,3 +1,4 @@
+import logging
 import struct
 from binascii import hexlify
 from typing import List, Optional, Sequence, Union
@@ -141,8 +142,17 @@ class Convert:
 class Cli:
     """ A custom ModbusClient for creating the cli instance. """
 
-    def __init__(self, modbus_client: ModbusClient):
+    def __init__(self, modbus_client: ModbusClient, debug: bool):
         self.modbus_client = modbus_client
+        self.debug = debug
+
+    @property
+    def debug(self):
+        return logging.getLogger('pyModbusTCP.client').getEffectiveLevel() == logging.DEBUG
+
+    @debug.setter
+    def debug(self, value: bool):
+        logging.getLogger('pyModbusTCP.client').setLevel(logging.DEBUG if value else logging.INFO)
 
     def read_bits(self, address: int, number: int = 1, d_inputs: bool = False):
         if d_inputs:

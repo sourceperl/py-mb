@@ -1,5 +1,5 @@
 __title__ = 'py-mb-cli'
 __description__ = 'An interactive modbus tool based on IPython.'
 __url__ = 'https://github.com/sourceperl/py-mb/'
-__version__ = '0.0.1.dev0'
+__version__ = '0.0.1.dev1'
 __license__ = 'MIT'

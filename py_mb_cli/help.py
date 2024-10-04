@@ -7,6 +7,9 @@ Type 'exit' to quit and 'help()' for more info.
 HELP_TXT = \
 """Usages examples:
 
+- turn on debug mode:
+    cli.debug = True
+
 - read 4 bits at @512 in "coils" space (function 0x01):
     cli.read_bits(512, 4)
 

@@ -1,4 +1,5 @@
 import argparse
+import logging
 import sys
 
 from IPython import embed
@@ -14,6 +15,8 @@ def help():
 
 
 def main():
+    # init logging
+    logging.basicConfig(format='%(name)s:%(message)s')
     # parse args
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--debug', action='store_true', help='set debug mode')
@@ -34,14 +37,14 @@ def main():
     convert = Convert()
 
     # init modbus client
-    cli = Cli(ModbusClient(host=args.host, port=args.port, unit_id=args.unit_id,
-                           timeout=args.timeout, debug=args.debug))
+    cli = Cli(ModbusClient(host=args.host, port=args.port, unit_id=args.unit_id, timeout=args.timeout), 
+              debug=args.debug)
+    # if a command is set, run it and show result
     if args.cmd:
-        # if a command is set, run it and show result
         try:
             print(eval(args.cmd))
         except ValueError as e:
             print(e)
+    # when no command is set, start in interactive mode
     else:
-        # when no command is set, start in interactive mode
         sys.exit(embed(banner1=HEADER_TXT, banner2='', exit_msg=''))
